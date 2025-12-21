@@ -1,0 +1,465 @@
+{
+  "name": "My workflow 15",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1KUQQ2zxEpWcWRWnlqzTIl_JVGJpdaesP",
+          "mode": "list",
+          "cachedResultName": "RAG testing",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1KUQQ2zxEpWcWRWnlqzTIl_JVGJpdaesP"
+        },
+        "event": "fileCreated",
+        "options": {
+          "fileType": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -672,
+        -192
+      ],
+      "id": "dba35643-0777-4b70-9ab0-612b8441885a",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DKvricd8htf05aZH",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1KUQQ2zxEpWcWRWnlqzTIl_JVGJpdaesP",
+          "mode": "list",
+          "cachedResultName": "RAG testing",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1KUQQ2zxEpWcWRWnlqzTIl_JVGJpdaesP"
+        },
+        "event": "fileUpdated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        -32
+      ],
+      "id": "8d95fee6-4850-4eb4-ad71-be1d987e9967",
+      "name": "Google Drive Trigger1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DKvricd8htf05aZH",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -368,
+        -144
+      ],
+      "id": "e56475d9-d601-4922-a33d-de1d1cdfad28",
+      "name": "Merge"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        -144
+      ],
+      "id": "744f54e2-d984-4ccc-b54a-74538d89aa22",
+      "name": "Wait",
+      "webhookId": "c6f4c924-2f1e-4b23-949d-bb662f1f79ea"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json[\"name\"] }}",
+        "returnAll": true,
+        "filter": {},
+        "options": {
+          "fields": [
+            "*"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -112,
+        -144
+      ],
+      "id": "5b5aaa59-a3ff-40e4-8e6d-00c5cfc8dda6",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DKvricd8htf05aZH",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json[\"name\"] }}",
+        "returnAll": true,
+        "filter": {},
+        "options": {
+          "fields": [
+            "*"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        224,
+        -144
+      ],
+      "id": "d05a6c62-8a44-4c9b-a858-5ddf795482b7",
+      "name": "Search files and folders1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DKvricd8htf05aZH",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get both outputs from your two Search nodes\nconst file1Data = $json[\"Search files and folders\"] || $items(\"Search files and folders\")[0]?.json;\nconst file2Data = $json[\"Search files and folders1\"] || $items(\"Search files and folders1\")[0]?.json;\n\n// Handle if nodes return arrays instead of plain objects\nconst file1 = Array.isArray(file1Data) ? file1Data[0] : file1Data;\nconst file2 = Array.isArray(file2Data) ? file2Data[0] : file2Data;\n\n// Safety checks\nif (!file1 || !file2) {\n  return [\n    {\n      json: {\n        match: false,\n        reason: \"Missing file data from one or both searches.\",\n        hasFile1: !!file1,\n        hasFile2: !!file2,\n      },\n    },\n  ];\n}\n\n// Compare stable properties\nconst sameChecksum = file1.md5Checksum === file2.md5Checksum;\nconst sameSize = file1.size === file2.size;\nconst sameModifiedTime = file1.modifiedTime === file2.modifiedTime;\n\n// Return result\nreturn [\n  {\n    json: {\n      match: sameChecksum && sameSize && sameModifiedTime,\n      md5Changed: !sameChecksum,\n      sizeChanged: !sameSize,\n      modifiedTimeChanged: !sameModifiedTime,\n      file1Modified: file1.modifiedTime,\n      file2Modified: file2.modifiedTime,\n      file1Size: file1.size,\n      file2Size: file2.size,\n      file1Md5: file1.md5Checksum,\n      file2Md5: file2.md5Checksum,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -144
+      ],
+      "id": "b54fb30c-68b2-4b97-a097-7c023b00b587",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1d65a8a3-de2c-41ec-a252-3bc948f65a9e",
+              "leftValue": "={{ $json.match }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        640,
+        -144
+      ],
+      "id": "f92ba003-874b-4f39-9ecc-584cb1218e39",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Merge').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        864,
+        -160
+      ],
+      "id": "99392cf5-8fc2-4dd7-b6ae-b35e306fc655",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DKvricd8htf05aZH",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho",
+          "mode": "list",
+          "cachedResultName": "RAG_Dev",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "File ID",
+              "lookupValue": "={{ $('Merge').item.json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1280,
+        -160
+      ],
+      "id": "18825940-1421-4adf-956d-e94d9f3ec713",
+      "name": "Check Existing File",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CUW4rJo7fbBMKx3X",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function sha256(ascii) {\n  function rightRotate(value, amount) {\n    return (value >>> amount) | (value << (32 - amount));\n  }\n\n  let mathPow = Math.pow;\n  let maxWord = mathPow(2, 32);\n  let lengthProperty = 'length';\n  let i, j; // Used as a counter across the whole file\n  let result = '';\n\n  let words = [];\n  let asciiBitLength = ascii[lengthProperty] * 8;\n\n  let hash = sha256.h = sha256.h || [];\n  let k = sha256.k = sha256.k || [];\n  let primeCounter = k[lengthProperty];\n\n  let isComposite = {};\n  for (let candidate = 2; primeCounter < 64; candidate++) {\n    if (!isComposite[candidate]) {\n      for (i = 0; i < 313; i += candidate) {\n        isComposite[i] = candidate;\n      }\n      hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;\n      k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;\n    }\n  }\n\n  ascii += '\\x80'; // Append '1' bit (plus zero padding)\n  while ((ascii[lengthProperty] % 64) - 56) ascii += '\\x00';\n  for (i = 0; i < ascii[lengthProperty]; i++) {\n    j = ascii.charCodeAt(i);\n    if (j >> 8) return; // Only ASCII allowed\n    words[i >> 2] |= j << (((3 - i) % 4) * 8);\n  }\n  words[words[lengthProperty]] = (asciiBitLength / maxWord) | 0;\n  words[words[lengthProperty]] = asciiBitLength;\n\n  for (j = 0; j < words[lengthProperty];) {\n    let w = words.slice(j, (j += 16));\n    let oldHash = hash;\n    hash = hash.slice(0, 8);\n\n    for (i = 0; i < 64; i++) {\n      let w15 = w[i - 15],\n        w2 = w[i - 2];\n\n      let a = hash[0],\n        e = hash[4];\n      let temp1 =\n        hash[7] +\n        (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) +\n        ((e & hash[5]) ^ (~e & hash[6])) +\n        k[i] +\n        (w[i] =\n          i < 16\n            ? w[i]\n            : (w[i - 16] +\n                (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)) +\n                w[i - 7] +\n                (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))) |\n              0);\n      let temp2 =\n        (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) +\n        ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));\n\n      hash = [(temp1 + temp2) | 0].concat(hash);\n      hash[4] = (hash[4] + temp1) | 0;\n    }\n\n    for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;\n  }\n\n  for (i = 0; i < 8; i++) {\n    for (j = 3; j + 1; j--) {\n      let b = (hash[i] >> (j * 8)) & 255;\n      result += (b < 16 ? 0 : '') + b.toString(16);\n    }\n  }\n  return result;\n}\n\n// Process n8n item\nconst results = [];\nfor (const item of $input.all()) {\n  if (!item.binary || !item.binary.data) {\n    results.push({ json: { error: \"No file data found\" } });\n    continue;\n  }\n\n  const base64String = item.binary.data.data || item.binary.data;\n  const ascii = Buffer.from(base64String, 'base64').toString('binary');\n  const hash = sha256(ascii);\n  results.push({ json: { ...item.json, computedSHA256: hash } });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        -160
+      ],
+      "id": "9934a098-7b67-4d68-9973-dc12fb5fbe79",
+      "name": "Compute SHA"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": "={{ $input.all().length > 1 && $input.all()[1].json ? 2 : 1 }}\n"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1488,
+        -160
+      ],
+      "id": "2359e8ea-71cf-47a8-b3c8-5637653cfb18",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Inputs from previous nodes\nconst fileId = $json.id;\nconst fileName = $json.name;\nconst newHash = $json.computedSHA256;\nconst modifiedTime = $json.modifiedTime;\n\n// Try to get data from \"Check Existing File\" node safely\nlet existing = null;\n\ntry {\n  const sheetNodeData = $node[\"Check Existing File\"].json;\n  if (sheetNodeData && sheetNodeData.length > 0) {\n    existing = sheetNodeData[0];\n  } else if ($node[\"Check Existing File\"].item) {\n    existing = $node[\"Check Existing File\"].item.json;\n  }\n} catch (e) {\n  existing = null; // node didn't execute in this branch\n}\n\n// === Decision Logic ===\nif (!existing || Object.keys(existing).length === 0) {\n  // No existing record found — new file\n  return [\n    {\n      json: {\n        action: \"insert\",\n        fileId,\n        fileName,\n        newHash,\n        modifiedTime,\n      },\n    },\n  ];\n}\n\nconst oldHash = existing[\"SHA256\"];\nconst oldModified = existing[\"Last Modified\"];\n\nif (oldHash === newHash && oldModified === modifiedTime) {\n  return [\n    {\n      json: {\n        action: \"skip\",\n        fileId,\n        reason: \"No change detected\",\n      },\n    },\n  ];\n}\n\n// File exists but was modified\nreturn [\n  {\n    json: {\n      action: \"update\",\n      fileId,\n      fileName,\n      newHash,\n      modifiedTime,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        -176
+      ],
+      "id": "11838b98-bd2d-447b-be02-52abba0c9603",
+      "name": "Check update or create"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Compute SHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing File": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Compute SHA": {
+      "main": [
+        [
+          {
+            "node": "Check Existing File",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Check update or create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "34edb05b-67df-4fa5-b06a-748f625d9a5e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c3e69ce4bf9c5dee76adf502c086e5cdb3dd340a9cb515212faed2cb1e455db6"
+  },
+  "id": "APbPCZ3AGyfTM74b",
+  "tags": []
+}

@@ -1,0 +1,2359 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2768,
+        -176
+      ],
+      "id": "3a7debf2-241d-4f3b-ad3e-3028b7c1160c",
+      "name": "Wait",
+      "webhookId": "c6f4c924-2f1e-4b23-949d-bb662f1f79ea"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json[\"name\"] }}",
+        "returnAll": true,
+        "filter": {},
+        "options": {
+          "fields": [
+            "*"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2992,
+        -176
+      ],
+      "id": "871fd913-119f-45b8-a509-9ec44306dce5",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "httgFlDJ2NT0KnCx",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json[\"name\"] }}",
+        "returnAll": true,
+        "filter": {},
+        "options": {
+          "fields": [
+            "*"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2544,
+        -176
+      ],
+      "id": "0c789386-c7eb-45c9-9c0c-e6f28c715ea8",
+      "name": "Search files and folders1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "httgFlDJ2NT0KnCx",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1d65a8a3-de2c-41ec-a252-3bc948f65a9e",
+              "leftValue": "={{ $json.match }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2096,
+        -176
+      ],
+      "id": "6bb7b200-7a9b-4096-9b48-ef8bd28543db",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "function sha256(ascii) {\n  function rightRotate(value, amount) {\n    return (value >>> amount) | (value << (32 - amount));\n  }\n\n  let mathPow = Math.pow;\n  let maxWord = mathPow(2, 32);\n  let lengthProperty = 'length';\n  let i, j; // Used as a counter across the whole file\n  let result = '';\n\n  let words = [];\n  let asciiBitLength = ascii[lengthProperty] * 8;\n\n  let hash = sha256.h = sha256.h || [];\n  let k = sha256.k = sha256.k || [];\n  let primeCounter = k[lengthProperty];\n\n  let isComposite = {};\n  for (let candidate = 2; primeCounter < 64; candidate++) {\n    if (!isComposite[candidate]) {\n      for (i = 0; i < 313; i += candidate) {\n        isComposite[i] = candidate;\n      }\n      hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;\n      k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;\n    }\n  }\n\n  ascii += '\\x80'; // Append '1' bit (plus zero padding)\n  while ((ascii[lengthProperty] % 64) - 56) ascii += '\\x00';\n  for (i = 0; i < ascii[lengthProperty]; i++) {\n    j = ascii.charCodeAt(i);\n    if (j >> 8) return; // Only ASCII allowed\n    words[i >> 2] |= j << (((3 - i) % 4) * 8);\n  }\n  words[words[lengthProperty]] = (asciiBitLength / maxWord) | 0;\n  words[words[lengthProperty]] = asciiBitLength;\n\n  for (j = 0; j < words[lengthProperty];) {\n    let w = words.slice(j, (j += 16));\n    let oldHash = hash;\n    hash = hash.slice(0, 8);\n\n    for (i = 0; i < 64; i++) {\n      let w15 = w[i - 15],\n        w2 = w[i - 2];\n\n      let a = hash[0],\n        e = hash[4];\n      let temp1 =\n        hash[7] +\n        (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) +\n        ((e & hash[5]) ^ (~e & hash[6])) +\n        k[i] +\n        (w[i] =\n          i < 16\n            ? w[i]\n            : (w[i - 16] +\n                (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)) +\n                w[i - 7] +\n                (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))) |\n              0);\n      let temp2 =\n        (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) +\n        ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));\n\n      hash = [(temp1 + temp2) | 0].concat(hash);\n      hash[4] = (hash[4] + temp1) | 0;\n    }\n\n    for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;\n  }\n\n  for (i = 0; i < 8; i++) {\n    for (j = 3; j + 1; j--) {\n      let b = (hash[i] >> (j * 8)) & 255;\n      result += (b < 16 ? 0 : '') + b.toString(16);\n    }\n  }\n  return result;\n}\n\n// Process n8n item\nconst results = [];\nfor (const item of $input.all()) {\n  if (!item.binary || !item.binary.data) {\n    results.push({ json: { error: \"No file data found\" } });\n    continue;\n  }\n\n  const base64String = item.binary.data.data || item.binary.data;\n  const ascii = Buffer.from(base64String, 'base64').toString('binary');\n  const hash = sha256(ascii);\n  results.push({ json: { ...item.json, computedSHA256: hash } });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        -176
+      ],
+      "id": "e77cf04d-9130-46f1-8bf3-ac2767fea33f",
+      "name": "Compute SHA"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Robust \"Check update or create1\" node\n// Safe, defensive reads; returns one item array with action: insert/update/skip\n\n// helper\nconst norm = (v) => {\n  if (v === undefined || v === null) return \"\";\n  return String(v).trim();\n};\n\n// 1) Read compute node output safely\nlet computeNodeJson = null;\ntry {\n  const computeItems = $items(\"Compute SHA\") || $items(\"Compute SHA1\") || [];\n  computeNodeJson = Array.isArray(computeItems) && computeItems.length > 0 ? (computeItems[0].json ?? null) : null;\n} catch (e) {\n  computeNodeJson = null;\n}\n\n// As a fallback, allow current item's json (in case upstream wiring differs)\nif (!computeNodeJson) {\n  try {\n    computeNodeJson = $json ?? null;\n  } catch (e) {\n    computeNodeJson = null;\n  }\n}\n\n// 2) Read sheet node output safely (try both common names)\nlet sheetNodeJson = null;\ntry {\n  const tryNames = [\"File ID already exists1\", \"Check if File ID already exists1\", \"Check if File ID already exists\"];\n  for (const n of tryNames) {\n    try {\n      const items = $items(n) || [];\n      if (Array.isArray(items) && items.length > 0 && items[0].json && Object.keys(items[0].json).length > 0) {\n        sheetNodeJson = items[0].json;\n        break;\n      }\n      // sometimes node exposes .json directly\n      const nodeObj = $node[n];\n      if (nodeObj && nodeObj.json && Object.keys(nodeObj.json).length > 0) {\n        // if it is an array take first element\n        sheetNodeJson = Array.isArray(nodeObj.json) ? nodeObj.json[0] : nodeObj.json;\n        if (sheetNodeJson) break;\n      }\n    } catch (inner) {\n      // continue trying other names\n    }\n  }\n} catch (e) {\n  sheetNodeJson = null;\n}\n\n// 3) Extract canonical fields\nconst src_fileId = norm(computeNodeJson?.id ?? computeNodeJson?.fileId ?? computeNodeJson?.[\"File ID\"] ?? \"\");\nconst src_computedSHA256 = norm(computeNodeJson?.computedSHA256 ?? computeNodeJson?.computedSHA ?? \"\");\nconst src_modifiedTime = norm(computeNodeJson?.modifiedTime ?? computeNodeJson?.[\"Last Modified\"] ?? \"\");\n\nconst sheet_fileId = norm(sheetNodeJson?.[\"File ID\"] ?? sheetNodeJson?.fileId ?? sheetNodeJson?.id ?? \"\");\nconst sheet_SHA256 = norm(sheetNodeJson?.[\"SHA256\"] ?? sheetNodeJson?.SHA256 ?? sheetNodeJson?.sha256 ?? \"\");\nconst sheet_modified = norm(sheetNodeJson?.[\"Last Modified\"] ?? sheetNodeJson?.lastModified ?? sheetNodeJson?.modifiedTime ?? \"\");\n\n// 4) Decision logic per your rules\nlet action = \"insert\";\nlet reason = \"\";\n\nif (!sheet_fileId) {\n  action = \"insert\";\n  reason = \"No matching row returned by File ID already exists1 (sheet empty for this file id).\";\n} else {\n  // sheet row exists\n  if (sheet_SHA256 && src_computedSHA256 && sheet_SHA256 === src_computedSHA256) {\n    action = \"skip\";\n    reason = \"SHA256 from sheet matches computedSHA256 (no change).\";\n  } else {\n    action = \"update\";\n    reason = \"Sheet row exists but SHA256 differs from computedSHA256 (update required).\";\n  }\n}\n\n// 5) Return required array of items\nreturn [\n  {\n    json: {\n      action,\n      reason,\n      debug: {\n        src_fileId,\n        src_computedSHA256,\n        src_modifiedTime,\n        sheet_fileId,\n        sheet_SHA256,\n        sheet_modified,\n        sheetRowPresent: !!sheet_fileId,\n        computeNodeFound: !!computeNodeJson,\n        sheetNodeFound: !!sheetNodeJson\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        -176
+      ],
+      "id": "07112b31-9755-4d0a-ac4b-e150e6bf126e",
+      "name": "Check update or create"
+    },
+    {
+      "parameters": {
+        "content": "## To check if the file is completely uploaded or not\n",
+        "height": 352,
+        "width": 1120
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3056,
+        -288
+      ],
+      "id": "3377b9d6-85c8-4c85-99ea-c21561be3a8d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## To check if the file content has also changed or not (No further processing if for example only the name of file or locatiion changed.)\n\n",
+        "height": 384,
+        "width": 1088
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1472,
+        -384
+      ],
+      "id": "a5eb4ed9-6da1-4b39-b712-72963b08c7c5",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho",
+          "mode": "list",
+          "cachedResultName": "RAG_Dev",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "File ID",
+              "lookupValue": "={{ $('Loop Over Items').first().json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -976,
+        -176
+      ],
+      "id": "1de910a1-2f9a-46b0-b89c-c6f110350764",
+      "name": "Check if File ID already exists",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "isfFoXqkawbtEbtG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get both outputs from your two Search nodes\nconst file1Data = $json[\"Search files and folders\"] || $items(\"Search files and folders\")[0]?.json;\nconst file2Data = $json[\"Search files and folders1\"] || $items(\"Search files and folders1\")[0]?.json;\n\n// Handle if nodes return arrays instead of plain objects\nconst file1 = Array.isArray(file1Data) ? file1Data[0] : file1Data;\nconst file2 = Array.isArray(file2Data) ? file2Data[0] : file2Data;\n\n// Safety checks\nif (!file1 || !file2) {\n  return [\n    {\n      json: {\n        match: false,\n        reason: \"Missing file data from one or both searches.\",\n        hasFile1: !!file1,\n        hasFile2: !!file2,\n      },\n    },\n  ];\n}\n\n// Compare stable properties\nconst sameChecksum = file1.md5Checksum === file2.md5Checksum;\nconst sameSize = file1.size === file2.size;\nconst sameModifiedTime = file1.modifiedTime === file2.modifiedTime;\n\n// Return result\nreturn [\n  {\n    json: {\n      match: sameChecksum && sameSize && sameModifiedTime,\n      md5Changed: !sameChecksum,\n      sizeChanged: !sameSize,\n      modifiedTimeChanged: !sameModifiedTime,\n      file1Modified: file1.modifiedTime,\n      file2Modified: file2.modifiedTime,\n      file1Size: file1.size,\n      file2Size: file2.size,\n      file1Md5: file1.md5Checksum,\n      file2Md5: file2.md5Checksum,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2320,
+        -176
+      ],
+      "id": "d00a3587-28c6-44a7-9402-3bd56c3a07f9",
+      "name": "Check if the file is completely uploaded"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.fileType }}",
+                    "rightValue": "document",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f4f48544-6f75-40a6-afdd-7406aab50c18"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Document"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d6fe868f-72e2-4078-b02e-ded8c46bd85a",
+                    "leftValue": "={{ $json.fileType }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -1648,
+        -176
+      ],
+      "id": "731717c2-9581-4e40-a63a-c2ac13848e53",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "documentType": "image_url",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mistralAi",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        224
+      ],
+      "id": "b1c84462-2a13-4cdb-a75a-d8c84de3e947",
+      "name": "Extract text",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "4QEwXeLZzozQp31j",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Loop Over Items').first().json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1440,
+        224
+      ],
+      "id": "2bb71faf-7915-45b5-a338-bbec4f92b661",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "httgFlDJ2NT0KnCx",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function sha256(ascii) {\n  function rightRotate(value, amount) {\n    return (value >>> amount) | (value << (32 - amount));\n  }\n\n  let mathPow = Math.pow;\n  let maxWord = mathPow(2, 32);\n  let lengthProperty = 'length';\n  let i, j;\n  let result = '';\n\n  let words = [];\n  let asciiBitLength = ascii[lengthProperty] * 8;\n\n  let hash = sha256.h = sha256.h || [];\n  let k = sha256.k = sha256.k || [];\n  let primeCounter = k[lengthProperty];\n\n  let isComposite = {};\n  for (let candidate = 2; primeCounter < 64; candidate++) {\n    if (!isComposite[candidate]) {\n      for (i = 0; i < 313; i += candidate) {\n        isComposite[i] = candidate;\n      }\n      hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;\n      k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;\n    }\n  }\n\n  ascii += '\\x80';\n  while ((ascii[lengthProperty] % 64) - 56) ascii += '\\x00';\n  for (i = 0; i < ascii[lengthProperty]; i++) {\n    j = ascii.charCodeAt(i);\n    if (j >> 8) return;\n    words[i >> 2] |= j << (((3 - i) % 4) * 8);\n  }\n  words[words[lengthProperty]] = (asciiBitLength / maxWord) | 0;\n  words[words[lengthProperty]] = asciiBitLength;\n\n  for (j = 0; j < words[lengthProperty];) {\n    let w = words.slice(j, (j += 16));\n    let oldHash = hash;\n    hash = hash.slice(0, 8);\n\n    for (i = 0; i < 64; i++) {\n      let w15 = w[i - 15],\n        w2 = w[i - 2];\n\n      let a = hash[0],\n        e = hash[4];\n      let temp1 =\n        hash[7] +\n        (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) +\n        ((e & hash[5]) ^ (~e & hash[6])) +\n        k[i] +\n        (w[i] =\n          i < 16\n            ? w[i]\n            : (w[i - 16] +\n                (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)) +\n                w[i - 7] +\n                (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))) |\n              0);\n      let temp2 =\n        (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) +\n        ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));\n\n      hash = [(temp1 + temp2) | 0].concat(hash);\n      hash[4] = (hash[4] + temp1) | 0;\n    }\n\n    for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;\n  }\n\n  for (i = 0; i < 8; i++) {\n    for (j = 3; j + 1; j--) {\n      let b = (hash[i] >> (j * 8)) & 255;\n      result += (b < 16 ? 0 : '') + b.toString(16);\n    }\n  }\n  return result;\n}\n\n// Process n8n items\nconst results = [];\nfor (const item of $input.all()) {\n  const markdown = item.json?.pages?.[0]?.markdown || item.json?.extractedText;\n  if (!markdown) {\n    results.push({ json: { ...item.json, error: \"No markdown found\" } });\n    continue;\n  }\n\n  const hash = sha256(markdown);\n  results.push({ json: { ...item.json, computedSHA256: hash } });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -928,
+        224
+      ],
+      "id": "392da110-38a1-405b-92a4-212a94275b16",
+      "name": "Compute SHA1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Robust \"Check update or create1\" node\n// Safe, defensive reads; returns one item array with action: insert/update/skip\n\n// helper\nconst norm = (v) => {\n  if (v === undefined || v === null) return \"\";\n  return String(v).trim();\n};\n\n// 1) Read compute node output safely\nlet computeNodeJson = null;\ntry {\n  const computeItems = $items(\"Compute SHA1\") || $items(\"Compute SHA\") || [];\n  computeNodeJson = Array.isArray(computeItems) && computeItems.length > 0 ? (computeItems[0].json ?? null) : null;\n} catch (e) {\n  computeNodeJson = null;\n}\n\n// As a fallback, allow current item's json (in case upstream wiring differs)\nif (!computeNodeJson) {\n  try {\n    computeNodeJson = $json ?? null;\n  } catch (e) {\n    computeNodeJson = null;\n  }\n}\n\n// 2) Read sheet node output safely (try both common names)\nlet sheetNodeJson = null;\ntry {\n  const tryNames = [\"File ID already exists1\", \"Check if File ID already exists1\", \"Check if File ID already exists\"];\n  for (const n of tryNames) {\n    try {\n      const items = $items(n) || [];\n      if (Array.isArray(items) && items.length > 0 && items[0].json && Object.keys(items[0].json).length > 0) {\n        sheetNodeJson = items[0].json;\n        break;\n      }\n      // sometimes node exposes .json directly\n      const nodeObj = $node[n];\n      if (nodeObj && nodeObj.json && Object.keys(nodeObj.json).length > 0) {\n        // if it is an array take first element\n        sheetNodeJson = Array.isArray(nodeObj.json) ? nodeObj.json[0] : nodeObj.json;\n        if (sheetNodeJson) break;\n      }\n    } catch (inner) {\n      // continue trying other names\n    }\n  }\n} catch (e) {\n  sheetNodeJson = null;\n}\n\n// 3) Extract canonical fields\nconst src_fileId = norm(computeNodeJson?.id ?? computeNodeJson?.fileId ?? computeNodeJson?.[\"File ID\"] ?? \"\");\nconst src_computedSHA256 = norm(computeNodeJson?.computedSHA256 ?? computeNodeJson?.computedSHA ?? \"\");\nconst src_modifiedTime = norm(computeNodeJson?.modifiedTime ?? computeNodeJson?.[\"Last Modified\"] ?? \"\");\n\nconst sheet_fileId = norm(sheetNodeJson?.[\"File ID\"] ?? sheetNodeJson?.fileId ?? sheetNodeJson?.id ?? \"\");\nconst sheet_SHA256 = norm(sheetNodeJson?.[\"SHA256\"] ?? sheetNodeJson?.SHA256 ?? sheetNodeJson?.sha256 ?? \"\");\nconst sheet_modified = norm(sheetNodeJson?.[\"Last Modified\"] ?? sheetNodeJson?.lastModified ?? sheetNodeJson?.modifiedTime ?? \"\");\n\n// 4) Decision logic per your rules\nlet action = \"insert\";\nlet reason = \"\";\n\nif (!sheet_fileId) {\n  action = \"insert\";\n  reason = \"No matching row returned by File ID already exists1 (sheet empty for this file id).\";\n} else {\n  // sheet row exists\n  if (sheet_SHA256 && src_computedSHA256 && sheet_SHA256 === src_computedSHA256) {\n    action = \"skip\";\n    reason = \"SHA256 from sheet matches computedSHA256 (no change).\";\n  } else {\n    action = \"update\";\n    reason = \"Sheet row exists but SHA256 differs from computedSHA256 (update required).\";\n  }\n}\n\n// 5) Return required array of items\nreturn [\n  {\n    json: {\n      action,\n      reason,\n      debug: {\n        src_fileId,\n        src_computedSHA256,\n        src_modifiedTime,\n        sheet_fileId,\n        sheet_SHA256,\n        sheet_modified,\n        sheetRowPresent: !!sheet_fileId,\n        computeNodeFound: !!computeNodeJson,\n        sheetNodeFound: !!sheetNodeJson\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        224
+      ],
+      "id": "7a365e18-391e-49cb-9d7f-2ba56dca42cb",
+      "name": "Check update or create1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho",
+          "mode": "list",
+          "cachedResultName": "RAG_Dev",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "File ID",
+              "lookupValue": "={{ $('Loop Over Items').first().json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -752,
+        224
+      ],
+      "id": "6ecbed64-dad3-48eb-99e4-6415016bb057",
+      "name": "Check if File ID already exists1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "isfFoXqkawbtEbtG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho",
+          "mode": "list",
+          "cachedResultName": "RAG_Dev",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "File ID"
+          ],
+          "schema": [
+            {
+              "id": "File ID",
+              "displayName": "File ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "File Name",
+              "displayName": "File Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SHA256",
+              "displayName": "SHA256",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Modified",
+              "displayName": "Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Embedding Status",
+              "displayName": "Embedding Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Embedded At",
+              "displayName": "Embedded At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -80,
+        -176
+      ],
+      "id": "c7bcb026-f3b4-43d8-a43c-7987221805f8",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "isfFoXqkawbtEbtG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7ea63d25-395a-4af6-8f16-833d0aaf4f7c",
+              "name": "File ID",
+              "value": "={{ $('Loop Over Items').first().json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "a8518065-d7e2-4951-802f-fde1f1236f76",
+              "name": "File Name",
+              "value": "={{ $('Loop Over Items').first().json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "ed987c57-48d8-468b-ad3b-f97983fc8fc0",
+              "name": "SHA256",
+              "value": "={{ $json.debug.src_computedSHA256 }}",
+              "type": "string"
+            },
+            {
+              "id": "c4c65657-8180-4005-9018-f17d08853e11",
+              "name": "Last Modified",
+              "value": "={{ $('Loop Over Items').first().json.modifiedTime }}",
+              "type": "string"
+            },
+            {
+              "id": "598ea775-ad51-45a7-89ab-7b9a69015b0d",
+              "name": "Processed At",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "128fd555-0a32-4c65-af1e-ba43140bc06f",
+              "name": "Embedding Status",
+              "value": "NA",
+              "type": "string"
+            },
+            {
+              "id": "488799e4-6478-4f3d-b803-a0745e769731",
+              "name": "Embedded At",
+              "value": "NA",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        -176
+      ],
+      "id": "800da502-ac6f-455f-8bdc-0e9ff36ef82d",
+      "name": "Set name of fields to match those in the sheet"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action && ($json.action.includes(\"insert\") || $json.action.includes(\"update\")).toBoolean() }}\n",
+                    "rightValue": "={{ $json.action && ($json.action.includes(\"insert\") || $json.action.includes(\"update\")) }}\n",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "25987ea4-af16-4928-bb01-69b5727e0aac"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Update or Insert"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3a2a68fd-5d95-4267-a42d-ad3eca9e1f7e",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "skip",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "same file"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -528,
+        -176
+      ],
+      "id": "db2644c1-287f-469a-96af-189f6002b347",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: Multiple items from previous node\n// Assumes each item contains a field like fileName or mimeType.\n\n// Define lists of extensions and types\nconst documentExtensions = ['.txt', '.doc', '.docx', '.pdf', '.rtf', '.md'];\nconst imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff','.webp'];\nconst documentMimeTypes = [\n  'application/pdf',\n  'application/msword',\n  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',\n  'text/plain',\n  'text/markdown',\n];\nconst imageMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp',\"image/webp\", 'image/tiff'];\n\nreturn items.map(item => {\n  const input = item.json;\n  const fileName = input['File Name'] || '';\n  const mimeType =  $('Loop Over Items').first().json.mimeType|| '';\n  \n  // Classification logic\n  let fileType = 'unknown';\n  \n  const lowerName = fileName.toLowerCase();\n  \n  if (documentExtensions.some(ext => lowerName.endsWith(ext)) || documentMimeTypes.includes(mimeType)) {\n    fileType = 'document';\n  } else if (imageExtensions.some(ext => lowerName.endsWith(ext)) || imageMimeTypes.includes(mimeType)) {\n    fileType = 'image';\n  }\n  \n  return {\n    json: {\n      ...input,\n      fileType,  // Add the classification to output\n    },\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1872,
+        -176
+      ],
+      "id": "a785aa6a-9249-4bbc-bd0a-28fafc535507",
+      "name": "Check if file is Document or image"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Loop Over Items').first().json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1424,
+        -176
+      ],
+      "id": "2a1a498b-96ea-4418-bbba-13df80f58c46",
+      "name": "Download file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "httgFlDJ2NT0KnCx",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho",
+          "mode": "list",
+          "cachedResultName": "RAG_Dev",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "File ID"
+          ],
+          "schema": [
+            {
+              "id": "File ID",
+              "displayName": "File ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "File Name",
+              "displayName": "File Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SHA256",
+              "displayName": "SHA256",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Modified",
+              "displayName": "Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Embedding Status",
+              "displayName": "Embedding Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Embedded At",
+              "displayName": "Embedded At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        144,
+        224
+      ],
+      "id": "eaf36cfd-9542-45fa-b139-24914b6484e2",
+      "name": "Append or update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "isfFoXqkawbtEbtG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7ea63d25-395a-4af6-8f16-833d0aaf4f7c",
+              "name": "File ID",
+              "value": "={{ $('Loop Over Items').first().json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "a8518065-d7e2-4951-802f-fde1f1236f76",
+              "name": "File Name",
+              "value": "={{ $('Loop Over Items').first().json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "ed987c57-48d8-468b-ad3b-f97983fc8fc0",
+              "name": "SHA256",
+              "value": "={{ $json.debug.src_computedSHA256 }}",
+              "type": "string"
+            },
+            {
+              "id": "c4c65657-8180-4005-9018-f17d08853e11",
+              "name": "Last Modified",
+              "value": "={{ $('Loop Over Items').first().json.modifiedTime}}",
+              "type": "string"
+            },
+            {
+              "id": "598ea775-ad51-45a7-89ab-7b9a69015b0d",
+              "name": "Processed At",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "128fd555-0a32-4c65-af1e-ba43140bc06f",
+              "name": "Embedding Status",
+              "value": "NA",
+              "type": "string"
+            },
+            {
+              "id": "488799e4-6478-4f3d-b803-a0745e769731",
+              "name": "Embedded At",
+              "value": "NA",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        224
+      ],
+      "id": "22c2e262-2633-44e4-91fe-4013c6675347",
+      "name": "Set name of fields to match those in the sheet1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action && ($json.action.includes(\"insert\") || $json.action.includes(\"update\")).toBoolean() }}\n",
+                    "rightValue": "={{\"update\" || \"insert\"}}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "25987ea4-af16-4928-bb01-69b5727e0aac"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Update or Insert"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3a2a68fd-5d95-4267-a42d-ad3eca9e1f7e",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "skip",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "same file"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -304,
+        224
+      ],
+      "id": "9aad9eb7-e067-4978-9266-2f90f00399e5",
+      "name": "Switch2"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "demo",
+          "mode": "list",
+          "cachedResultName": "demo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        416,
+        -608
+      ],
+      "id": "75c88b7e-e7d4-4188-add5-4c26bdc8d923",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "4KkenY2AXyXc07o8",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        512,
+        -384
+      ],
+      "id": "932a8907-73cd-41a9-ade2-8615666be69c",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -256
+      ],
+      "id": "881c9a05-7ade-4204-a4c1-5e8c3e920af1",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 512
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        384,
+        -384
+      ],
+      "id": "84ee5e9a-a4be-414e-8fe0-c6c816d1e6d1",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "o3rJYBdYd8xjHMSY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "demo",
+          "mode": "list",
+          "cachedResultName": "demo"
+        },
+        "options": {
+          "clearNamespace": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        344
+      ],
+      "id": "f88587b4-9b9c-4814-b25a-dc111b64a1ec",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "4KkenY2AXyXc07o8",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1216,
+        568
+      ],
+      "id": "0b6d8f35-c0ae-4f9d-817a-d9602e843a92",
+      "name": "Default Data Loader1"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        688
+      ],
+      "id": "5ee23528-92ef-4206-a312-15359b32b55e",
+      "name": "Recursive Character Text Splitter1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 512
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1088,
+        568
+      ],
+      "id": "6bb5e506-336c-4e44-a617-dbb8bbb00b0f",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "o3rJYBdYd8xjHMSY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "createFromText",
+        "content": "={{ $('Extract text').item.json.extractedText }}",
+        "name": "={{ $('Loop Over Items').first().json.name }} text ocr",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "14ZHTKXIY9e4t0KCNAgoYfwWqaYPX2TLe",
+          "mode": "list",
+          "cachedResultName": "Untitled folder",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/14ZHTKXIY9e4t0KCNAgoYfwWqaYPX2TLe"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        504,
+        224
+      ],
+      "id": "b8c60a02-e445-4d97-9781-2c4f2a10837d",
+      "name": "Create file from text",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "httgFlDJ2NT0KnCx",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        688,
+        224
+      ],
+      "id": "e2fe3f12-f844-432a-a7b0-670bdac5f523",
+      "name": "Download file2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "httgFlDJ2NT0KnCx",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "'1KUQQ2zxEpWcWRWnlqzTIl_JVGJpdaesP' in parents and trashed = false",
+        "returnAll": true,
+        "filter": {},
+        "options": {
+          "fields": [
+            "*"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -3888,
+        144
+      ],
+      "id": "ecb42d15-f19b-4904-ad76-73e80aedc586",
+      "name": "Search files and folders2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "httgFlDJ2NT0KnCx",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho",
+          "mode": "list",
+          "cachedResultName": "RAG_Dev",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3664,
+        144
+      ],
+      "id": "73b56e6d-1b69-4a07-884e-1b6a967b68ba",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "isfFoXqkawbtEbtG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * n8n Code node (JavaScript) - robust filter for new Drive files\n * - Uses outputs of \"Search files and folders2\" and \"Get row(s) in sheet\"\n * - Returns one output item per new file (full file JSON preserved)\n * - Skips folders and trashed items\n * - Skips files modified within STABILITY_SECONDS to avoid partial uploads\n *\n * Paste into an n8n Code node (JS).\n */\n\nconst STABILITY_SECONDS = 60; // skip files modified in the last X seconds (tuneable)\nconst DRIVE_NODE_NAME = 'Search files and folders2';\nconst SHEET_NODE_NAME = 'Get row(s) in sheet';\n\nfunction safeGetItemsFromNode(nodeName) {\n  try {\n    const items = $items(nodeName);\n    if (!items || items.length === 0) return [];\n    return items;\n  } catch (e) {\n    // node not found or no data\n    return [];\n  }\n}\n\n// 1) Collect Drive output safely\nlet driveRaw = safeGetItemsFromNode(DRIVE_NODE_NAME);\n\n// If Drive node returned a single item whose json is an array (common), expand it\nlet driveFiles = [];\nif (driveRaw.length === 1 && Array.isArray(driveRaw[0].json) && driveRaw[0].json.length > 0) {\n  // e.g. json is [ {file1}, {file2} ]\n  driveFiles = driveRaw[0].json.map(f => ({ json: f }));\n} else {\n  // Normal case: each item is an n8n item with .json containing file object\n  driveFiles = driveRaw.map(it => {\n    // defensive: ensure it.json is object\n    if (it && it.json && typeof it.json === 'object') return { json: it.json };\n    return null;\n  }).filter(Boolean);\n}\n\n// 2) Collect Sheet output safely and build processed set\nlet sheetRaw = safeGetItemsFromNode(SHEET_NODE_NAME);\nconst processedSet = new Set();\n\nfor (const rowItem of sheetRaw) {\n  if (!rowItem || !rowItem.json) continue;\n  const j = rowItem.json;\n\n  // Recognize a few possible column names (case-insensitive)\n  const candidates = ['File ID', 'file_id', 'fileId', 'FileID', 'file id'];\n  for (const c of candidates) {\n    if (Object.prototype.hasOwnProperty.call(j, c) && j[c]) {\n      processedSet.add(String(j[c]).trim());\n      break;\n    }\n  }\n\n  // Also scan all keys for something that looks like an id pattern (defensive)\n  if (Object.keys(j).length > 0 && !Array.from(processedSet).length) {\n    // try common column names lower-cased\n    for (const k of Object.keys(j)) {\n      if (k.toLowerCase().replace(/\\s+/g, '') === 'fileid' && j[k]) {\n        processedSet.add(String(j[k]).trim());\n        break;\n      }\n    }\n  }\n}\n\n// 3) Determine now and filter new files\nconst now = new Date();\nconst newFiles = [];\n\nfor (const item of driveFiles) {\n  try {\n    const file = item.json;\n    if (!file || typeof file !== 'object') continue;\n\n    // Only consider actual files (not folders) and non-trashed\n    const mime = String(file.mimeType || '').trim();\n    if (mime === 'application/vnd.google-apps.folder') continue;\n    if (file.trashed === true) continue;\n\n    // file id must exist\n    const fid = file.id || file.fileId || file['File ID'] || file['id'];\n    if (!fid) continue;\n\n    // Skip if already processed (exact id match)\n    if (processedSet.has(String(fid).trim())) continue;\n\n    // Stability check: skip files modified very recently\n    if (file.modifiedTime) {\n      const mt = new Date(file.modifiedTime);\n      if (!isNaN(mt.getTime())) {\n        const ageSec = (now - mt) / 1000;\n        if (ageSec < STABILITY_SECONDS) {\n          // Skip for now (will be picked next cron run)\n          continue;\n        }\n      }\n    }\n\n    // All good -> include full details; normalize id into json.id if missing\n    const out = Object.assign({}, file);\n    if (!out.id && fid) out.id = fid;\n\n    newFiles.push({ json: out });\n\n  } catch (err) {\n    // Defensive: if something odd happens with one item, don't break the whole run.\n    // Log to console (n8n will capture) and continue.\n    console.error('Error processing drive item, skipping it:', err);\n    continue;\n  }\n}\n\n// Return array of new files (each item.json is full file object)\nreturn newFiles;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3440,
+        144
+      ],
+      "id": "5e77dbc3-b03a-4963-8cc8-2f749679c7bb",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -3216,
+        144
+      ],
+      "id": "89441767-cb14-4962-8530-8a095c0357f4",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Loop Over Items').first().json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        160,
+        -400
+      ],
+      "id": "7c4f414f-5f6e-43b9-b677-e7b04e82a6d5",
+      "name": "Download file3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "httgFlDJ2NT0KnCx",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho",
+          "mode": "list",
+          "cachedResultName": "RAG_Dev",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "File ID": "={{ $('Loop Over Items').first().json.id }}",
+            "Embedding Status": "Done",
+            "Embedded At": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "File ID"
+          ],
+          "schema": [
+            {
+              "id": "File ID",
+              "displayName": "File ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "File Name",
+              "displayName": "File Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "SHA256",
+              "displayName": "SHA256",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified",
+              "displayName": "Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Embedding Status",
+              "displayName": "Embedding Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Embedded At",
+              "displayName": "Embedded At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        768,
+        -608
+      ],
+      "id": "7133ea4b-861a-44de-beac-7829ec83fc85",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "isfFoXqkawbtEbtG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho",
+          "mode": "list",
+          "cachedResultName": "RAG_Dev",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sO_oE4Ain3dMmn2QXceCimdWEdyLDkYJ_lnlyc9Byho/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "File ID": "={{ $('Loop Over Items').first().json.id }}",
+            "Embedding Status": "Done",
+            "Embedded At": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "File ID"
+          ],
+          "schema": [
+            {
+              "id": "File ID",
+              "displayName": "File ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "File Name",
+              "displayName": "File Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "SHA256",
+              "displayName": "SHA256",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified",
+              "displayName": "Last Modified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Embedding Status",
+              "displayName": "Embedding Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Embedded At",
+              "displayName": "Embedded At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1536,
+        336
+      ],
+      "id": "543ae203-6816-47e3-8143-e2983a34c2d6",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "isfFoXqkawbtEbtG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4144,
+        128
+      ],
+      "id": "9e220272-238d-4686-af8c-833018f60155",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "content": "## After every minute check the google drive folder for any update in files.",
+        "height": 384,
+        "width": 944
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4240,
+        0
+      ],
+      "id": "c073ec8f-1194-4876-a253-15aa755a9203",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Check if the file is Image, document or PDF\n",
+        "height": 352,
+        "width": 432
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1920,
+        -288
+      ],
+      "id": "72115fc8-1a5f-4e7c-9bf7-870fb6d37dae",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Update Google Sheet\n",
+        "height": 368,
+        "width": 432
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -368
+      ],
+      "id": "fddb1b70-fb8a-47ef-8516-5d659f875d48",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Convert to embeddings and save in pinecone vector store\n",
+        "height": 576,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        144,
+        -704
+      ],
+      "id": "16780cf1-bb04-432e-bd89-90d9912558c6",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## OCR (Extract text from the Image files)",
+        "height": 304,
+        "width": 480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1504,
+        128
+      ],
+      "id": "8a42cd73-87fa-4d17-85c9-a7d5500a47a3",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## To check if the file content has also changed or not (No further processing if for example only the name of file or locatiion changed.)\n\n",
+        "height": 384,
+        "width": 832
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -976,
+        64
+      ],
+      "id": "b3722771-3d4e-47a0-a201-c60d5ea07ec7",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## Update Google Sheet\n",
+        "height": 368,
+        "width": 432
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        80
+      ],
+      "id": "c4c14363-0e37-458a-a94a-3d293c711b8f",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## Save and download the extracted text from the image into google drive\n",
+        "height": 352,
+        "width": 432
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        400,
+        80
+      ],
+      "id": "c2bec4c2-c942-437d-8522-1fc83c27288c",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "## Convert to embeddings and save in pinecone vector store\n",
+        "height": 576,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        992,
+        256
+      ],
+      "id": "1d99238c-d02f-46f6-b818-9b7bc4e61c37",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a helpful HR assistant designed to answer employee questions based on company policies.\n\nRetrieve relevant information from the provided internal documents and provide a concise, accurate, and informative answer to the employee's question.\n\nUse the tool called \"company_documents_tool\" to retrieve any information from the company's documents.\n\nIf the answer cannot be found in the provided documents, respond with \"I cannot find the answer in the available resources.\""
+        }
+      },
+      "id": "94302fa3-cd9c-4c9d-b404-650a52d8da8d",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -2864,
+        1104
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "name": "company_documents_tool",
+        "description": "Retrieve information from any company documents"
+      },
+      "id": "7ebe2d6f-725a-4120-bc59-d6f4be6b7125",
+      "name": "Vector Store Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "position": [
+        -2656,
+        1328
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "demo",
+          "mode": "list",
+          "cachedResultName": "demo"
+        },
+        "options": {}
+      },
+      "id": "5e735f8f-32ff-4069-9d87-a99bdb68ac6c",
+      "name": "Pinecone Vector Store (Retrieval)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "position": [
+        -2768,
+        1536
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "pineconeApi": {
+          "id": "4KkenY2AXyXc07o8",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "456d793d-00b2-4ce1-abec-9e41b9865aab",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        -2784,
+        1328
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "32aacf26-2ac5-4bb2-9cf5-ea457d3efe28",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        -3168,
+        1120
+      ],
+      "webhookId": "5f1c0c82-0ff9-40c7-9e2e-b1a96ffe24cd",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2912,
+        1328
+      ],
+      "id": "4732ec7b-54c2-49d0-84c7-890e7d47f883",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "o3rJYBdYd8xjHMSY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2480,
+        1536
+      ],
+      "id": "bb4e0ec8-9528-4261-8e2c-d6fcaea9c827",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "o3rJYBdYd8xjHMSY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 512
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2688,
+        1744
+      ],
+      "id": "88122dfd-4367-45ae-a7e0-6dbb9f353d8f",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "o3rJYBdYd8xjHMSY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Document retrieval and Chat using Open AI",
+        "height": 1056,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3312,
+        880
+      ],
+      "id": "f5b2f36b-dcad-40ee-8ee7-81d069ceb503",
+      "name": "Sticky Note11"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders1": {
+      "main": [
+        [
+          {
+            "node": "Check if the file is completely uploaded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Check if file is Document or image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute SHA": {
+      "main": [
+        [
+          {
+            "node": "Check if File ID already exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if File ID already exists": {
+      "main": [
+        [
+          {
+            "node": "Check update or create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if the file is completely uploaded": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Download file1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract text": {
+      "main": [
+        [
+          {
+            "node": "Compute SHA1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute SHA1": {
+      "main": [
+        [
+          {
+            "node": "Check if File ID already exists1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if File ID already exists1": {
+      "main": [
+        [
+          {
+            "node": "Check update or create1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set name of fields to match those in the sheet": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check update or create": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Set name of fields to match those in the sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if file is Document or image": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file1": {
+      "main": [
+        [
+          {
+            "node": "Compute SHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set name of fields to match those in the sheet1": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch2": {
+      "main": [
+        [
+          {
+            "node": "Set name of fields to match those in the sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check update or create1": {
+      "main": [
+        [
+          {
+            "node": "Switch2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Download file3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Create file from text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create file from text": {
+      "main": [
+        [
+          {
+            "node": "Download file2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file2": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders2": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file3": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store (Retrieval)": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store (Retrieval)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "365c9412-290e-443d-a82e-2fa118ad5489",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "51ab57182078281e47116f8c50f453587ccecad1bd08d0c74a394e1e394e9533"
+  },
+  "id": "WX9grzGvePcf62kn",
+  "tags": []
+}
